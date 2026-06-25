@@ -1,0 +1,42 @@
+PersistentHomology-NeuralComplexity/
+│
+├── README.md
+│
+├── LICENSE
+│
+├── CITATION.cff
+│
+├── .gitignore
+│
+├── Data/
+│   ├── ExampleData/
+│   │   ├── Example_PointCloud.csv
+│   │   └── Example_MasterResults.csv
+│   └── README.md
+│
+├── MATLAB/
+│   ├── Main.m
+│   ├── Figure1_Workflow.m
+│   ├── Figure2_Boxplots.m
+│   ├── Figure3_TopologyExamples.m
+│   ├── Figure4_Correlation.m
+│   ├── Figure5_LastFight.m
+│   ├── Statistics/
+│   │   ├── FriedmanTest.m
+│   │   ├── HolmBonferroni.m
+│   │   ├── SpearmanCorrelation.m
+│   │   └── ExportLatexTables.m
+│   └── Utilities/
+│
+├── Python/
+│   ├── PersistentHomology.py
+│   ├── ComputePointCloud.py
+│   ├── requirements.txt
+│
+├── Figures/
+│
+├── Tables/
+│
+├── Results/
+│
+└── Manuscript/
