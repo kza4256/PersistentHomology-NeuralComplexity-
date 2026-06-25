@@ -1,0 +1,100 @@
+!pip install ripser persim
+import pandas as pd
+import numpy as np
+
+from ripser import ripser
+from persim import plot_diagrams
+
+import matplotlib.pyplot as plt
+from google.colab import files
+
+uploaded = files.upload()
+
+
+def analyze_pointcloud(filename):
+
+    X = pd.read_csv(filename, header=None).values
+
+    result = ripser(X, maxdim=1)
+
+    diagrams = result['dgms']
+
+    H0 = diagrams[0]
+    H1 = diagrams[1]
+
+    plt.figure(figsize=(5,5))
+    plot_diagrams(diagrams, show=True)
+    plt.title(filename)
+    # plt.show()
+
+    # Save the persistence diagram
+    plt.savefig(
+    filename.replace('.csv', '_PD.png'),
+    dpi=300,
+    bbox_inches='tight'
+    )
+
+    plt.show()
+    plt.close()
+
+    if len(H1) > 0:
+
+        life = H1[:,1] - H1[:,0]
+
+        life = life[np.isfinite(life)]
+
+        TP = np.sum(life)
+
+        p = life/np.sum(life)
+
+        PE = -np.sum(p*np.log(p))
+
+        MeanLife = np.mean(life)
+
+        MaxLife = np.max(life)
+
+    else:
+
+        TP = 0
+        PE = 0
+        MeanLife = 0
+        MaxLife = 0
+
+    return TP, PE, MeanLife, MaxLife
+
+files_to_analyze = [
+    'AN1_PreCO2_PointCloud.csv',
+    'AN1_PostCO2-Ph06_PointCloud.csv',
+    'AW2_PreCO2_PointCloud.csv',
+    'AW2_PostCO2-Ph04_PointCloud.csv',
+    'AW2_PostCO2-Ph06_PointCloud.csv'
+]
+
+results = []
+
+for f in files_to_analyze:
+
+    TP, PE, MeanLife, MaxLife = analyze_pointcloud(f)
+
+    results.append([f, TP, PE, MeanLife, MaxLife])
+
+    print('\n',f)
+    print('TP       =',TP)
+    print('PE       =',PE)
+    print('MeanLife =',MeanLife)
+    print('MaxLife  =',MaxLife)
+
+results_df = pd.DataFrame(
+    results,
+    columns=[
+        'Recording',
+        'TP',
+        'PE',
+        'MeanLife',
+        'MaxLife'
+    ]
+)
+
+results_df
+
+
