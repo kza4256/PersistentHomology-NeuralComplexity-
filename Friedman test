@@ -1,0 +1,77 @@
+clear; clc; close all;
+
+%% Load data
+T = readtable('MasterResults.csv');
+
+%% Define phases in the correct order
+phaseOrder = {'PreCO2','Post1','Post2','Post3',...
+              'Post4','Post5','Post6'};
+
+%% Unique rats
+rats = unique(T.Rat,'stable');
+
+%% Metrics to analyze
+metrics = {'TP','PE','MeanLife','MaxLife','H1Count'};
+
+%% Initialize results table
+FriedmanResults = table();
+
+fprintf('\n==============================\n');
+fprintf('FRIEDMAN TEST RESULTS\n');
+fprintf('==============================\n');
+
+for m = 1:length(metrics)
+
+    metricName = metrics{m};
+
+    %% Build 10 × 7 matrix
+    M = nan(length(rats), length(phaseOrder));
+
+    for i = 1:length(rats)
+
+        for j = 1:length(phaseOrder)
+
+            idx = strcmp(T.Rat,rats{i}) & ...
+                  strcmp(T.Phase,phaseOrder{j});
+
+            value = T.(metricName)(idx);
+
+            if ~isempty(value)
+                M(i,j) = value;
+            end
+
+        end
+    end
+
+    %% Friedman test
+    [p,tbl,stats] = friedman(M,1,'off');
+
+    chi2 = cell2mat(tbl(2,5));
+    df   = cell2mat(tbl(2,3));
+
+    %% Save results
+    newRow = table(...
+        string(metricName),...
+        chi2,...
+        df,...
+        p,...
+        'VariableNames',...
+        {'Metric','ChiSquare','DF','pValue'});
+
+    FriedmanResults = [FriedmanResults; newRow];
+
+    %% Print results
+    fprintf('\nMetric: %s\n',metricName);
+    fprintf('Chi-square = %.3f\n',chi2);
+    fprintf('df         = %.0f\n',df);
+    fprintf('p-value    = %.6f\n',p);
+
+end
+
+%% Save results
+writetable(FriedmanResults,...
+          'FriedmanResults.csv');
+
+disp(' ');
+disp('Results saved to FriedmanResults.csv');
+disp(FriedmanResults);
