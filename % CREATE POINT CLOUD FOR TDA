@@ -1,0 +1,32 @@
+
+clear all; close all; clc;
+
+x = x1(:,:);
+
+%% ==========================================
+% CREATE POINT CLOUD FOR TDA
+%% ==========================================
+
+X = x';          % N × 4
+
+% Normalize each channel
+for k = 1:4
+    X(:,k) = (X(:,k)-mean(X(:,k))) ./ std(X(:,k));
+end
+
+% Downsample
+rng(1);
+
+Npts = min(3000,size(X,1));
+
+idx = randperm(size(X,1),Npts);
+
+Xsmall = X(idx,:);
+
+% Save point cloud
+
+phaseName = 'AW5_PostCO2-Ph05';
+filename = sprintf('%s_PointCloud.csv', phaseName);
+writematrix(Xsmall, filename);
+fprintf('Saved point cloud (%d points × %d dimensions) to %s\n', ...
+    size(Xsmall,1), size(Xsmall,2), filename);
