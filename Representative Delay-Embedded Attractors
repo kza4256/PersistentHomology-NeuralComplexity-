@@ -1,0 +1,258 @@
+% Representative Delay-Embedded Attractors
+
+%% Parts 1
+clear, close all, clc
+
+%% USER SETTINGS
+    MAX_POINTS = 3000;
+    POINT_SIZE = 6;
+    EXPORT_DPI = 600;
+
+    CAM_AZ = -50;
+    CAM_EL = 18;
+
+%% Representative datasets
+    files = { ...
+   };
+    
+    titles = { ...
+  };
+
+%% Check files
+    fprintf('\n');
+    fprintf('---------------------------------------------\n');
+    fprintf('Loading representative datasets...\n');
+    fprintf('---------------------------------------------\n');
+    
+    for k = 1:numel(files)
+    
+        if ~isfile(files{k})
+    
+            error('Cannot find file:\n%s',files{k});
+    
+        end
+    
+    end
+    
+    fprintf('All files found.\n\n');
+
+%% Read data only ONCE
+    Data = cell(numel(files),1);
+    
+    xmin = inf;
+    xmax = -inf;
+    
+    ymin = inf;
+    ymax = -inf;
+    
+    zmin = inf;
+    zmax = -inf;
+    
+    fprintf('Reading files...\n\n');
+    
+    for k = 1:numel(files)
+    
+        fprintf('%d / %d : %s\n',k,numel(files),files{k});
+    
+        % X = readmatrix(files{k});
+        opts = detectImportOptions(files{k});
+        opts.DataLines = [2 Inf];
+    
+        X = readmatrix(files{k},opts);
+    
+        % Keep only first 3 embedding coordinates
+    
+        X = X(:,1:3);
+    
+        % Data{k} = X;
+    
+        % Only keep first three embedding dimensions
+        X = X(:,1:3);
+    
+        % Remove NaNs
+        X = X(all(isfinite(X),2),:);
+    
+        Data{k} = single(X);
+    
+        xmin = min(xmin,min(X(:,1)));
+        xmax = max(xmax,max(X(:,1)));
+    
+        ymin = min(ymin,min(X(:,2)));
+        ymax = max(ymax,max(X(:,2)));
+    
+        zmin = min(zmin,min(X(:,3)));
+        zmax = max(zmax,max(X(:,3)));
+    
+    end
+    
+    fprintf('\nFinished loading.\n');
+
+%% Common axis limits
+    padding = 0.05;
+    
+    xr = xmax-xmin;
+    yr = ymax-ymin;
+    zr = zmax-zmin;
+    
+    xmin = xmin-padding*xr;
+    xmax = xmax+padding*xr;
+    
+    ymin = ymin-padding*yr;
+    ymax = ymax+padding*yr;
+    
+    zmin = zmin-padding*zr;
+    zmax = zmax+padding*zr;
+
+%% Create figure
+
+    figure( ...
+    'Color','w',...
+    'Units','normalized',...
+    'Position',[0.04 0.06 0.90 0.82]);
+    
+    t = tiledlayout(2,3,...
+    'TileSpacing','compact',...
+    'Padding','compact');
+
+%% Colormap
+% colormap(parula)
+
+    cmap = turbo(256);
+    cmap = flipud(cmap);
+    colormap(cmap)
+
+%% ========================================================================
+    Downsample = @(N,maxN) ...
+    unique(round(linspace(1,N,min(N,maxN))));
+
+%% Panel labels
+    letters = 'ABCDEF';
+    
+    fprintf('\n');
+    fprintf('Initialization complete.\n');
+    fprintf('Beginning plotting...\n\n');
+
+%% Parts 2
+% Plot representative attractors
+
+for k = 1:numel(Data)
+
+    nexttile
+
+    X = Data{k};
+
+    N = size(X,1);
+
+    %% Random downsampling for visualization
+
+    if N > MAX_POINTS
+    idx = round(linspace(1,N,MAX_POINTS));
+    else
+    idx = 1:N;
+    end
+    Xplot = X(idx,:);
+
+    % Normalized time
+    tplot = linspace(0,1,length(idx));
+
+    %% Scatter plot
+    scatter3(...
+        Xplot(:,1),...
+        Xplot(:,2),...
+        Xplot(:,3),...
+        POINT_SIZE,...
+        tplot,...
+        'filled',...
+        'MarkerEdgeColor','none');
+
+    hold on
+
+    %% Formatting
+    daspect([1 1 1])
+
+    xlim([-5 5])
+    ylim([-5 5])
+    zlim([-5 5])
+
+    % view(135,20)
+    view(145,15)
+
+    grid off
+    box on
+
+    xlabel('$x(t)$',...
+        'Interpreter','latex',...
+        'FontSize',11)
+
+    ylabel('$x(t+\tau)$',...
+        'Interpreter','latex',...
+        'FontSize',11)
+
+    zlabel('$x(t+2\tau)$',...
+        'Interpreter','latex',...
+        'FontSize',11)
+
+    title(sprintf('(%s) %s',letters(k),titles{k}),...
+      'FontWeight','bold',...
+      'FontSize',12,...
+      'Interpreter','latex');
+
+    set(gca,...
+        'FontName','Arial',...
+        'FontSize',11,...
+        'LineWidth',1.3,...
+        'TickDir','out',...
+        'Layer','top');
+
+    text(...
+    0.02,...
+    0.96,...
+    letters(k),...
+    'Units','normalized',...
+    'FontWeight','bold',...
+    'FontSize',11);
+
+    drawnow limitrate
+
+end
+
+%% Parts 3
+    % Shared colorbar
+    cb = colorbar;
+    cb.Layout.Tile = 'east';
+    cb.Label.String = 'Normalized Time';
+    cb.Label.FontWeight = 'bold';
+    cb.Label.FontSize = 11;
+    cb.FontSize = 10;
+
+    cb.Position(1)=0.91;
+    cb.Position(2)=0.22;
+    cb.Position(4)=0.55;
+
+    clim([0 1])
+
+%% Row labels
+    annotation(...
+    'textbox',...
+    [0.02 0.76 0.05 0.05],...
+    'String','AN5',...
+    'FontWeight','bold',...
+    'FontSize',11,...
+    'Rotation',90,...
+    'EdgeColor','none');
+    
+    annotation(...
+    'textbox',...
+    [0.02 0.29 0.05 0.05],...
+    'String','AW2',...
+    'FontWeight','bold',...
+    'FontSize',11,...
+    'Rotation',90,...
+    'EdgeColor','none');
+
+%% Renderer
+    set(gcf,'Renderer','opengl')
+
+%% Better lighting
+    set(gcf,'InvertHardcopy','off')
+
