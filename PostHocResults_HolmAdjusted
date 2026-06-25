@@ -1,0 +1,129 @@
+clear; clc; close all;
+
+%% ============================================================
+% Load Data
+% =============================================================
+T = readtable('MasterResults.csv');
+
+baseline = 'PreCO2';
+postPhases = {'Post1','Post2','Post3','Post4','Post5','Post6'};
+
+rats = unique(T.Rat,'stable');
+
+metrics = {'TP','PE','MeanLife','MaxLife','H1Count'};
+
+alpha = 0.05;
+
+Results = table();
+
+fprintf('\n========================================\n');
+fprintf('POST-HOC WILCOXON TESTS\n');
+fprintf('HOLM-BONFERRONI CORRECTION\n');
+fprintf('========================================\n');
+
+%% ============================================================
+for m = 1:length(metrics)
+
+    metric = metrics{m};
+
+    fprintf('\n\n====================================\n');
+    fprintf('Metric: %s\n',metric);
+    fprintf('====================================\n');
+
+    rawP = zeros(length(postPhases),1);
+    signedRank = zeros(length(postPhases),1);
+
+    %% ---------------------------------------------------------
+    % Wilcoxon signed-rank tests
+    %% ---------------------------------------------------------
+
+    for j = 1:length(postPhases)
+
+        pre = nan(length(rats),1);
+        post = nan(length(rats),1);
+
+        for i = 1:length(rats)
+
+            idx1 = strcmp(T.Rat,rats{i}) & strcmp(T.Phase,baseline);
+            idx2 = strcmp(T.Rat,rats{i}) & strcmp(T.Phase,postPhases{j});
+
+            pre(i) = T.(metric)(idx1);
+            post(i) = T.(metric)(idx2);
+
+        end
+
+        [p,~,stats] = signrank(pre,post);
+
+        rawP(j) = p;
+        signedRank(j) = stats.signedrank;
+
+    end
+
+    %% =========================================================
+    % Holm-Bonferroni
+    %% =========================================================
+
+    k = length(rawP);
+
+    [sortedP,order] = sort(rawP);
+
+    adjustedSorted = zeros(k,1);
+
+    % Holm adjusted p-values
+    for i = 1:k
+
+        adjustedSorted(i) = (k-i+1)*sortedP(i);
+
+    end
+
+    % enforce monotonicity
+    for i = 2:k
+
+        adjustedSorted(i) = max(adjustedSorted(i),adjustedSorted(i-1));
+
+    end
+
+    adjustedSorted(adjustedSorted>1)=1;
+
+    adjustedP = zeros(k,1);
+    adjustedP(order)=adjustedSorted;
+
+    significant = adjustedP < alpha;
+
+    %% =========================================================
+    % Save
+    %% =========================================================
+
+    Metric = repmat(string(metric),k,1);
+
+    Comparison = string(postPhases');
+
+    temp = table(Metric,...
+                 Comparison,...
+                 signedRank,...
+                 rawP,...
+                 adjustedP,...
+                 significant,...
+        'VariableNames',...
+        {'Metric',...
+         'Comparison',...
+         'SignedRank',...
+         'RawP',...
+         'HolmAdjustedP',...
+         'Significant'});
+
+    Results=[Results;temp];
+
+    disp(temp)
+
+end
+
+%% ============================================================
+% Save
+%% ============================================================
+
+writetable(Results,'PostHocResults_HolmAdjusted.csv');
+
+fprintf('\n');
+fprintf('Saved to:\n');
+fprintf('PostHocResults_HolmAdjusted.csv\n');
