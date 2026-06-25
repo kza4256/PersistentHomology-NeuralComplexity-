@@ -1,0 +1,69 @@
+clear; clc; close all;
+
+%% Load data
+T = readtable('MasterResults.csv');
+
+%% Metrics to correlate with NS
+metrics = {'TP','PE','MeanLife','MaxLife','H1Count'};
+
+%% Initialize results table
+CorrelationResults = table();
+
+fprintf('\n=====================================\n');
+fprintf('SPEARMAN CORRELATIONS (N = %d)\n', height(T));
+fprintf('=====================================\n');
+
+for m = 1:length(metrics)
+
+    metric = metrics{m};
+
+    %% Extract vectors
+    NS = T.NS;
+    X  = T.(metric);
+
+    %% Spearman correlation
+    [rho,p] = corr(NS, X, ...
+        'Type','Spearman', ...
+        'Rows','complete');
+
+    %% Save
+    newRow = table( ...
+        string(metric), ...
+        rho, ...
+        p, ...
+        'VariableNames', ...
+        {'Metric','SpearmanRho','pValue'});
+
+    CorrelationResults = [CorrelationResults; newRow];
+
+    %% Print
+    fprintf('\nNS vs %s\n', metric);
+    fprintf('rho = %.4f\n', rho);
+    fprintf('p   = %.6f\n', p);
+
+end
+
+%% Save results
+writetable(CorrelationResults,...
+    'SpearmanResults.csv');
+
+fprintf('\nResults saved to SpearmanResults.csv\n');
+
+disp(CorrelationResults);
+
+figure;
+
+scatter(NS, X, 60, 'filled');
+hold on;
+
+lsline;
+
+xlabel('NS');
+ylabel(metric);
+
+title(sprintf('NS vs %s\n\\rho = %.2f, p = %.4f', ...
+    metric, rho, p));
+
+grid on;
+
+saveas(gcf, sprintf('NS_vs_%s.png',metric));
